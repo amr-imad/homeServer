@@ -30,9 +30,14 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: 22
           script: |
+            if [ ! -d "/var/www/homeServer/.git" ]; then
+              git clone https://github.com/amr-imad/homeServer.git /var/www/homeServer
+            else
+              cd /var/www/homeServer
+              git pull origin main
+            fi
+
             cd /var/www/homeServer
-            git reset --hard
-            git pull origin main
-            npm install 
-            pm2 start server.js --name homeServer
-            pm2 restart homeServer
+            npm install
+
+            pm2 restart homeServer || pm2 start server.js --name homeServer
