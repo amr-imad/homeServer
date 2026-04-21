@@ -10,6 +10,6 @@ COPY . .
 
 EXPOSE 3000
 
-ENV STATUS="CONTAINERIZED"
+ENV RUNNING_FROM="container"
 
 CMD ["node", "./src/server.js"]
