@@ -31,7 +31,7 @@ jobs:
           port: 22
           script: |
             if [ ! -d "/var/www/homeServer/.git" ]; then
-              git clone https://github.com/amr-imad/homeServer.git /var/www/homeServer
+            git clone https://github.com/amr-imad/homeServer.git /var/www/homeServer
             else
               cd /var/www/homeServer
               git pull origin main
@@ -39,5 +39,4 @@ jobs:
 
             cd /var/www/homeServer
             npm install
-
             pm2 restart homeServer || pm2 start server.js --name homeServer
