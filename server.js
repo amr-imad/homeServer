@@ -3,6 +3,7 @@ import os from "os";
 
 const app = express();
 const PORT = 3000;
+const VERSION = "1.2.0";
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
@@ -24,6 +25,7 @@ app.get("/", (req, res) => {
         <li>Uptime: ${uptime} seconds</li>
         <li>Memory Usage: ${memory} MB</li>
         <li>Node Version: ${process.version}</li>
+        <li>Version: ${VERSION}</li>
       </ul>
     </div>
   `);
