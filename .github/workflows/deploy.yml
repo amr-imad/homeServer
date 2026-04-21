@@ -52,4 +52,4 @@ jobs:
 
             npm install
 
-            pm2 restart homeServer || pm2 start server.js --name homeServer
+            pm2 restart homeserver || pm2 start src/server.js --name homeserver
