@@ -26,6 +26,7 @@ app.get("/", (req, res) => {
         <li>Memory Usage: ${memory} MB</li>
         <li>Node Version: ${process.version}</li>
         <li>Version: ${VERSION}</li>
+        <li>Running From: ${process.env.STATUS || "regular"}</li>
       </ul>
     </div>
   `);
