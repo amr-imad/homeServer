@@ -13,10 +13,15 @@ app.use((req, res, next) => {
   next();
 });
 
-// Route to toggle mode (for portfolio demonstration)
+// Route to toggle mode (handled via Nginx reverse proxy)
 app.get("/toggle-mode", (req, res) => {
-  isContainerMode = !isContainerMode;
-  res.redirect("/");
+  if (isContainerMode) {
+    isContainerMode = false;
+    res.redirect("/");
+  } else {
+    isContainerMode = true;
+    res.redirect("/container");
+  }
 });
 
 app.get("/", (req, res) => {
@@ -29,7 +34,7 @@ app.get("/", (req, res) => {
   };
 
   const modeLabel = isContainerMode ? "Containerized" : "Native OS";
-  const themeColor = isContainerMode ? "#0db7ed" : "#4CAF50"; // Docker Blue vs Node Green
+  const themeColor = isContainerMode ? "#0db7ed" : "#4CAF50";
 
   res.send(`
     <!DOCTYPE html>
@@ -62,15 +67,16 @@ app.get("/", (req, res) => {
 
         .container {
           width: 90%;
-          max-width: 800px;
+          max-width: 900px;
           padding: 40px;
           border-radius: 24px;
           background: var(--card-bg);
           backdrop-filter: blur(12px);
           border: 1px solid rgba(255, 255, 255, 0.1);
           box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-          text-align: center;
         }
+
+        .header { text-align: center; margin-bottom: 30px; }
 
         .badge {
           display: inline-block;
@@ -85,26 +91,35 @@ app.get("/", (req, res) => {
         }
 
         h1 { font-size: 2.5rem; margin-bottom: 10px; letter-spacing: -1px; }
-        p { color: #94a3b8; margin-bottom: 30px; }
+        .subtitle { color: #94a3b8; margin-bottom: 30px; text-align: center; }
 
-        .grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-          gap: 20px;
-          margin-bottom: 40px;
-        }
+        .main-layout { display: grid; grid-template-columns: 1.5fr 1fr; gap: 30px; }
+
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
 
         .stat-card {
           background: rgba(15, 23, 42, 0.5);
-          padding: 20px;
-          border-radius: 16px;
+          padding: 15px;
+          border-radius: 12px;
           border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        .stat-label { color: #64748b; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 8px; }
-        .stat-value { font-family: 'Courier New', monospace; font-size: 1.1rem; color: #f8fafc; }
+        .stat-label { color: #64748b; font-size: 0.7rem; text-transform: uppercase; margin-bottom: 5px; }
+        .stat-value { font-family: 'Courier New', monospace; font-size: 1rem; color: #f8fafc; overflow: hidden; text-overflow: ellipsis; }
 
-        .actions { display: flex; justify-content: center; gap: 15px; }
+        .pipeline-card {
+          background: rgba(255, 255, 255, 0.03);
+          padding: 20px;
+          border-radius: 16px;
+          border-left: 4px solid var(--primary-color);
+          text-align: left;
+        }
+
+        .pipeline-card h3 { font-size: 0.9rem; color: var(--primary-color); margin-bottom: 15px; text-transform: uppercase; }
+        .step { font-size: 0.85rem; margin-bottom: 10px; color: #cbd5e1; display: flex; align-items: flex-start; }
+        .step::before { content: '✔'; margin-right: 10px; color: var(--primary-color); }
+
+        .actions { display: flex; justify-content: center; gap: 15px; margin-top: 30px; }
 
         .btn {
           padding: 12px 24px;
@@ -114,6 +129,7 @@ app.get("/", (req, res) => {
           transition: all 0.2s;
           cursor: pointer;
           border: none;
+          font-size: 0.9rem;
         }
 
         .btn-primary { background: var(--primary-color); color: white; }
@@ -122,43 +138,46 @@ app.get("/", (req, res) => {
         .btn-outline { background: transparent; border: 1px solid #334155; color: #94a3b8; }
         .btn-outline:hover { background: rgba(255, 255, 255, 0.05); color: white; }
 
-        .footer { margin-top: 30px; font-size: 0.8rem; color: #475569; }
+        .footer { margin-top: 30px; font-size: 0.75rem; color: #475569; text-align: center; }
       </style>
     </head>
     <body>
       <div class="container">
-        <div class="badge">${modeLabel} Environment</div>
-        <h1>System Monitor</h1>
-        <p>Real-time server metrics for portfolio demonstration.</p>
-
-        <div class="grid">
-          <div class="stat-card">
-            <div class="stat-label">Hostname</div>
-            <div class="stat-value">${metrics.hostname}</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Uptime</div>
-            <div class="stat-value">${metrics.uptime}</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Memory</div>
-            <div class="stat-value">${metrics.memory}</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Node Version</div>
-            <div class="stat-value">${metrics.node}</div>
-          </div>
+        <div class="header">
+          <div class="badge">${modeLabel} Mode</div>
+          <h1>Infrastructure Dashboard</h1>
         </div>
+        
+        <p class="subtitle">Traffic routed via <strong>Nginx Reverse Proxy</strong> to internal service on port ${PORT}</p>
 
-        <div class="actions">
-          <a href="/toggle-mode" class="btn btn-primary">
-            ${isContainerMode ? "🏠 Switch to Regular" : "📦 Switch to Container"}
-          </a>
-          <button onclick="location.reload()" class="btn btn-outline">Refresh Data</button>
+        <div class="main-layout">
+          <div class="metrics-section">
+            <div class="grid">
+              <div class="stat-card"><div class="stat-label">Hostname</div><div class="stat-value">${metrics.hostname}</div></div>
+              <div class="stat-card"><div class="stat-label">Uptime</div><div class="stat-value">${metrics.uptime}</div></div>
+              <div class="stat-card"><div class="stat-label">Memory</div><div class="stat-value">${metrics.memory}</div></div>
+              <div class="stat-card"><div class="stat-label">Node</div><div class="stat-value">${metrics.node}</div></div>
+            </div>
+            
+            <div class="actions">
+              <a href="/toggle-mode" class="btn btn-primary">
+                ${isContainerMode ? "🏠 Switch to Regular Route" : "📦 Switch to Container Route"}
+              </a>
+              <button onclick="location.reload()" class="btn btn-outline">Refresh</button>
+            </div>
+          </div>
+
+          <div class="pipeline-card">
+            <h3>CI/CD Architecture</h3>
+            <div class="step">GitHub Push triggers 2 Workflows</div>
+            <div class="step">Workflow 1: Direct Deployment to Production</div>
+            <div class="step">Workflow 2: Build & Push to GHCR (Container Registry)</div>
+            <div class="step">Watchtower monitors GHCR and auto-updates images</div>
+          </div>
         </div>
 
         <div class="footer">
-          Build v${VERSION} • Running on ${metrics.platform}
+          Build v${VERSION} • Managed by Nginx • Deployment: GitHub Actions + Watchtower
         </div>
       </div>
     </body>
